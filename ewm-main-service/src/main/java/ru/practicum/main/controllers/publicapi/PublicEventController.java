@@ -10,7 +10,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.dto.event.EventFullDto;
 import ru.practicum.main.dto.event.EventShortDto;
-import ru.practicum.main.exceptions.ValidationException;
 import ru.practicum.main.service.EventService;
 
 import java.time.LocalDateTime;
@@ -38,25 +37,6 @@ public class PublicEventController {
                                           @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
                                           @RequestParam(defaultValue = "10") @Positive Integer size,
                                           HttpServletRequest request) {
-
-        if (categories != null) {
-            for (Long catId : categories) {
-                if (catId == null || catId <= 0) {
-                    throw new ValidationException("Category id must be positive");
-                }
-            }
-        }
-
-        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
-            throw new ValidationException("rangeStart must be before rangeEnd");
-        }
-
-        if (from < 0) {
-            throw new ValidationException("from must be greater than or equal to 0");
-        }
-        if (size < 1) {
-            throw new ValidationException("size must be greater than 0");
-        }
 
         log.info("GET /events - text: {}, categories: {}, paid: {}, rangeStart: {}, rangeEnd: {}, onlyAvailable: {}, sort: {}, from: {}, size: {}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);

@@ -294,6 +294,25 @@ public class EventServiceImpl implements EventService {
                                                          HttpServletRequest request) {
         log.info("Searching events by public filters");
 
+        if (categories != null) {
+            for (Long catId : categories) {
+                if (catId == null || catId <= 0) {
+                    throw new ValidationException("Category id must be positive");
+                }
+            }
+        }
+
+        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
+            throw new ValidationException("rangeStart must be before rangeEnd");
+        }
+
+        if (from != null && from < 0) {
+            throw new ValidationException("from must be greater than or equal to 0");
+        }
+        if (size != null && size < 1) {
+            throw new ValidationException("size must be greater than 0");
+        }
+
         int safeFrom = (from != null && from >= 0) ? from : 0;
         int safeSize = (size != null && size > 0) ? size : 10;
 
