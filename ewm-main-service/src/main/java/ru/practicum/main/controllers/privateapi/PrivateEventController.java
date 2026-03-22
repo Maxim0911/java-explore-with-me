@@ -28,7 +28,7 @@ import java.util.List;
 public class PrivateEventController {
 
     private final EventService eventService;
-    private final RequestService requestService;  // Добавить зависимость
+    private final RequestService requestService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

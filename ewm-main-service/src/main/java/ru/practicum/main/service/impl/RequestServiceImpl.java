@@ -48,6 +48,20 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
+    public List<ParticipationRequestDto> getEventParticipants(Long userId, Long eventId) {
+        log.info("Getting participants for event: {} by user: {}", eventId, userId);
+
+        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
+                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found for user " + userId));
+
+        List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
+
+        return requests.stream()
+                .map(requestMapper::toParticipationRequestDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public ParticipationRequestDto addRequest(Long userId, Long eventId) {
         log.info("Adding request for user: {} to event: {}", userId, eventId);
@@ -83,6 +97,10 @@ public class RequestServiceImpl implements RequestService {
                 .build();
 
         ParticipationRequest savedRequest = requestRepository.save(request);
+
+        event.setConfirmedRequests(requestRepository.countConfirmedRequestsByEventId(eventId));
+        eventRepository.save(event);
+
         log.info("Request created with id: {}", savedRequest.getId());
 
         return requestMapper.toParticipationRequestDto(savedRequest);
@@ -103,6 +121,10 @@ public class RequestServiceImpl implements RequestService {
         request.setStatus(RequestStatus.CANCELED);
         ParticipationRequest cancelledRequest = requestRepository.save(request);
 
+        Event event = cancelledRequest.getEvent();
+        event.setConfirmedRequests(requestRepository.countConfirmedRequestsByEventId(event.getId()));
+        eventRepository.save(event);
+
         log.info("Request {} cancelled", requestId);
         return requestMapper.toParticipationRequestDto(cancelledRequest);
     }
@@ -115,7 +137,6 @@ public class RequestServiceImpl implements RequestService {
 
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found for user " + userId));
-
 
         List<ParticipationRequest> requests = requestRepository.findAllByEventIdAndRequestIds(
                 eventId, request.getRequestIds());
@@ -173,20 +194,5 @@ public class RequestServiceImpl implements RequestService {
             return RequestStatus.CONFIRMED;
         }
         return RequestStatus.PENDING;
-    }
-
-    @Override
-    public List<ParticipationRequestDto> getEventParticipants(Long userId, Long eventId) {
-        log.info("Getting participants for event: {} by user: {}", eventId, userId);
-
-        // Проверяем, что событие существует и принадлежит пользователю
-        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
-                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found for user " + userId));
-
-        List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
-
-        return requests.stream()
-                .map(requestMapper::toParticipationRequestDto)
-                .collect(Collectors.toList());
     }
 }

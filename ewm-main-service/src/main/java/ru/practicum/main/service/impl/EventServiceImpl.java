@@ -69,7 +69,7 @@ public class EventServiceImpl implements EventService {
         Event savedEvent = eventRepository.save(event);
         log.info("Event created with id: {}", savedEvent.getId());
 
-        return eventMapper.toEventFullDto(savedEvent);
+        return enrichEventWithStats(savedEvent);
     }
 
     @Override
@@ -86,6 +86,9 @@ public class EventServiceImpl implements EventService {
         Pageable pageable = PageRequest.of(safeFrom / safeSize, safeSize);
         List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable);
 
+        enrichEventsWithConfirmedRequests(events);
+        updateEventsViews(events);
+
         return events.stream()
                 .map(eventMapper::toEventShortDto)
                 .collect(Collectors.toList());
@@ -98,7 +101,7 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
                 .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found for user " + userId));
 
-        return eventMapper.toEventFullDto(event);
+        return enrichEventWithStats(event);
     }
 
     @Override
@@ -169,7 +172,7 @@ public class EventServiceImpl implements EventService {
         Event updatedEvent = eventRepository.save(event);
         log.info("Event {} updated", eventId);
 
-        return eventMapper.toEventFullDto(updatedEvent);
+        return enrichEventWithStats(updatedEvent);
     }
 
     @Override
@@ -188,10 +191,22 @@ public class EventServiceImpl implements EventService {
         LocalDateTime start = (rangeStart != null) ? rangeStart : LocalDateTime.now();
         LocalDateTime end = (rangeEnd != null) ? rangeEnd : LocalDateTime.now().plusYears(100);
 
-        int page = safeFrom / safeSize;
-        Pageable pageable = PageRequest.of(page, safeSize);
+        // Преобразуем List<EventState> в List<String> для native query
+        List<String> stateStrings = null;
+        if (states != null && !states.isEmpty()) {
+            stateStrings = states.stream()
+                    .map(EventState::name)
+                    .collect(Collectors.toList());
+        }
+
+        int offset = safeFrom;
+        int limit = safeSize;
+
         List<Event> events = eventRepository.findEventsByAdminFilters(
-                users, states, categories, start, end, pageable);
+                users, stateStrings, categories, start, end, limit, offset);
+
+        enrichEventsWithConfirmedRequests(events);
+        updateEventsViews(events);
 
         return events.stream()
                 .map(eventMapper::toEventFullDto)
@@ -263,7 +278,7 @@ public class EventServiceImpl implements EventService {
         Event updatedEvent = eventRepository.save(event);
         log.info("Event {} updated by admin", eventId);
 
-        return eventMapper.toEventFullDto(updatedEvent);
+        return enrichEventWithStats(updatedEvent);
     }
 
     @Override
@@ -301,20 +316,18 @@ public class EventServiceImpl implements EventService {
             pageable = PageRequest.of(page, safeSize, Sort.by(Sort.Direction.ASC, "eventDate"));
         }
 
-        log.info("Query params - searchText: {}, categories: {}, paid: {}, start: {}, end: {}, onlyAvailable: {}, pageable: {}",
-                searchText, categories, paid, start, end, onlyAvailable, pageable);
-
+        int offset = safeFrom;
+        int limit = safeSize;
         List<Event> events = eventRepository.findEventsByPublicFilters(
-                searchText, categories, paid, start, end, onlyAvailable, pageable);
+                searchText, categories, paid, start, end, onlyAvailable, limit, offset);
 
         saveHit(request);
 
-        List<Long> eventIds = events.stream().map(Event::getId).collect(Collectors.toList());
-        Map<Long, Long> viewsMap = getViewsForEvents(eventIds);
+        enrichEventsWithConfirmedRequests(events);
+        updateEventsViews(events);
 
         List<EventShortDto> result = events.stream()
                 .map(eventMapper::toEventShortDto)
-                .peek(dto -> dto.setViews(viewsMap.getOrDefault(dto.getId(), 0L)))
                 .collect(Collectors.toList());
 
         log.info("Found {} events", result.size());
@@ -335,58 +348,13 @@ public class EventServiceImpl implements EventService {
         long confirmedRequests = requestRepository.countConfirmedRequestsByEventId(eventId);
         event.setConfirmedRequests(confirmedRequests);
 
-        Map<Long, Long> viewsMap = getViewsForEvents(List.of(eventId));
-        event.setViews(viewsMap.getOrDefault(eventId, 0L));
 
         saveHit(request);
 
+        Map<Long, Long> viewsMap = getViewsForEvents(List.of(eventId));
+        event.setViews(viewsMap.getOrDefault(eventId, 0L));
+
         return eventMapper.toEventFullDto(event);
-    }
-
-    private void saveHit(HttpServletRequest request) {
-        try {
-            HitDto hit = HitDto.builder()
-                    .app(APP_NAME)
-                    .uri(request.getRequestURI())
-                    .ip(request.getRemoteAddr())
-                    .timestamp(LocalDateTime.now())
-                    .build();
-            statsClient.saveHit(hit);
-        } catch (Exception e) {
-            log.error("Error saving hit to stats service: {}", e.getMessage());
-        }
-    }
-
-    private Map<Long, Long> getViewsForEvents(List<Long> eventIds) {
-        try {
-            if (eventIds.isEmpty()) {
-                return Collections.emptyMap();
-            }
-
-            LocalDateTime start = LocalDateTime.now().minusYears(10);
-            LocalDateTime end = LocalDateTime.now().plusYears(10);
-
-            List<String> uris = eventIds.stream()
-                    .map(id -> "/events/" + id)
-                    .collect(Collectors.toList());
-
-            List<StatsDto> stats = statsClient.getStats(start, end, uris, true);
-
-            if (stats == null) {
-                log.warn("Stats service returned null, using default views");
-                return Collections.emptyMap();
-            }
-
-            return stats.stream()
-                    .collect(Collectors.toMap(
-                            stat -> Long.parseLong(stat.getUri().replace("/events/", "")),
-                            StatsDto::getHits,
-                            (a, b) -> a
-                    ));
-        } catch (Exception e) {
-            log.error("Error getting views from stats service: {}", e.getMessage());
-            return Collections.emptyMap();
-        }
     }
 
     private void updateEventsViews(List<Event> events) {
@@ -403,5 +371,96 @@ public class EventServiceImpl implements EventService {
         events.forEach(event ->
                 event.setViews(viewsMap.getOrDefault(event.getId(), 0L))
         );
+    }
+
+    private void enrichEventsWithConfirmedRequests(List<Event> events) {
+        if (events == null || events.isEmpty()) {
+            return;
+        }
+
+        for (Event event : events) {
+            long confirmedRequests = requestRepository.countConfirmedRequestsByEventId(event.getId());
+            event.setConfirmedRequests(confirmedRequests);
+        }
+    }
+
+    private EventFullDto enrichEventWithStats(Event event) {
+        if (event == null) {
+            return null;
+        }
+
+        long confirmedRequests = requestRepository.countConfirmedRequestsByEventId(event.getId());
+        event.setConfirmedRequests(confirmedRequests);
+
+        Map<Long, Long> viewsMap = getViewsForEvents(List.of(event.getId()));
+        event.setViews(viewsMap.getOrDefault(event.getId(), 0L));
+
+        return eventMapper.toEventFullDto(event);
+    }
+
+    private void saveHit(HttpServletRequest request) {
+        try {
+            log.info("=== SAVING HIT START ===");
+            log.info("URI: {}", request.getRequestURI());
+            log.info("IP: {}", request.getRemoteAddr());
+
+            HitDto hit = HitDto.builder()
+                    .app(APP_NAME)
+                    .uri(request.getRequestURI())
+                    .ip(request.getRemoteAddr())
+                    .timestamp(LocalDateTime.now())
+                    .build();
+
+            log.info("Hit to send: {}", hit);
+            statsClient.saveHit(hit);
+            log.info("=== HIT SAVED SUCCESSFULLY ===");
+
+        } catch (Exception e) {
+            log.error("=== ERROR SAVING HIT: {} ===", e.getMessage(), e);
+        }
+    }
+
+    private Map<Long, Long> getViewsForEvents(List<Long> eventIds) {
+        try {
+            log.info("=== GETTING VIEWS FOR EVENTS: {} ===", eventIds);
+
+            if (eventIds.isEmpty()) {
+                return Collections.emptyMap();
+            }
+
+            LocalDateTime start = LocalDateTime.now().minusYears(10);
+            LocalDateTime end = LocalDateTime.now().plusYears(10);
+
+            log.info("Start: {}, End: {}", start, end);
+
+            List<String> uris = eventIds.stream()
+                    .map(id -> "/events/" + id)
+                    .collect(Collectors.toList());
+
+            log.info("URIs: {}", uris);
+
+            List<StatsDto> stats = statsClient.getStats(start, end, uris, true);
+
+            log.info("Stats received: {}", stats);
+
+            if (stats == null) {
+                log.warn("Stats service returned null, using default views");
+                return Collections.emptyMap();
+            }
+
+            Map<Long, Long> result = stats.stream()
+                    .collect(Collectors.toMap(
+                            stat -> Long.parseLong(stat.getUri().replace("/events/", "")),
+                            StatsDto::getHits,
+                            (a, b) -> a
+                    ));
+
+            log.info("Views map: {}", result);
+            return result;
+
+        } catch (Exception e) {
+            log.error("Error getting views from stats service: {}", e.getMessage(), e);
+            return Collections.emptyMap();
+        }
     }
 }

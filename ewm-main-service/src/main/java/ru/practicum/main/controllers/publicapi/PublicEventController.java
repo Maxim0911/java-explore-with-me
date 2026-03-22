@@ -1,7 +1,6 @@
 package ru.practicum.main.controllers.publicapi;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
@@ -36,14 +35,26 @@ public class PublicEventController {
                                           @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                           @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                           @RequestParam(required = false) String sort,
-                                          @RequestParam(required = false) Integer from,
-                                          @RequestParam(required = false) Integer size,
+                                          @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                          @RequestParam(defaultValue = "10") @Positive Integer size,
                                           HttpServletRequest request) {
 
-        if (from != null && from < 0) {
+        if (categories != null) {
+            for (Long catId : categories) {
+                if (catId == null || catId <= 0) {
+                    throw new ValidationException("Category id must be positive");
+                }
+            }
+        }
+
+        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
+            throw new ValidationException("rangeStart must be before rangeEnd");
+        }
+
+        if (from < 0) {
             throw new ValidationException("from must be greater than or equal to 0");
         }
-        if (size != null && size < 1) {
+        if (size < 1) {
             throw new ValidationException("size must be greater than 0");
         }
 
