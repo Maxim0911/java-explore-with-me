@@ -179,6 +179,9 @@ public class EventServiceImpl implements EventService {
                                                        Integer size) {
         log.info("Searching events by admin filters");
 
+        int page = (from != null) ? from / (size != null ? size : 10) : 0;
+        int pageSize = (size != null) ? size : 10;
+
         if (rangeStart == null) {
             rangeStart = LocalDateTime.now();
         }
@@ -186,7 +189,7 @@ public class EventServiceImpl implements EventService {
             rangeEnd = LocalDateTime.now().plusYears(100);
         }
 
-        Pageable pageable = PageRequest.of(from / size, size);
+        Pageable pageable = PageRequest.of(page, pageSize);
         List<Event> events = eventRepository.findEventsByAdminFilters(
                 users, states, categories, rangeStart, rangeEnd, pageable);
 
@@ -276,16 +279,18 @@ public class EventServiceImpl implements EventService {
                                                          HttpServletRequest request) {
         log.info("Searching events by public filters");
 
+        int page = (from != null) ? from / (size != null ? size : 10) : 0;
+        int pageSize = (size != null) ? size : 10;
+
         if (rangeStart == null && rangeEnd == null) {
             rangeStart = LocalDateTime.now();
         }
 
         Pageable pageable;
-        int page = from / size;
         if (sort != null && sort.equals("VIEWS")) {
-            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "views"));
+            pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "views"));
         } else {
-            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "eventDate"));
+            pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.ASC, "eventDate"));
         }
 
         List<Event> events = eventRepository.findEventsByPublicFilters(

@@ -1,8 +1,7 @@
 package ru.practicum.main.controllers.publicapi;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -34,8 +33,8 @@ public class PublicEventController {
                                           @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                           @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                           @RequestParam(required = false) String sort,
-                                          @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                          @RequestParam(defaultValue = "10") @Positive Integer size,
+                                          @RequestParam(defaultValue = "0") @Min(0) Integer from,
+                                          @RequestParam(defaultValue = "10") @Min(1) Integer size,
                                           HttpServletRequest request) {
         log.info("GET /events - text: {}, categories: {}, paid: {}, rangeStart: {}, rangeEnd: {}, onlyAvailable: {}, sort: {}, from: {}, size: {}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
