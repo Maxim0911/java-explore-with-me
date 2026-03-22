@@ -301,7 +301,7 @@ public class EventServiceImpl implements EventService {
             pageable = PageRequest.of(page, safeSize, Sort.by(Sort.Direction.ASC, "eventDate"));
         }
 
-        log.info("Executing query with searchText: {}, categories: {}, paid: {}, start: {}, end: {}, onlyAvailable: {}, pageable: {}",
+        log.info("Query params - searchText: {}, categories: {}, paid: {}, start: {}, end: {}, onlyAvailable: {}, pageable: {}",
                 searchText, categories, paid, start, end, onlyAvailable, pageable);
 
         List<Event> events = eventRepository.findEventsByPublicFilters(
