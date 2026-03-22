@@ -58,7 +58,7 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Category with id " + newEventDto.getCategory() + " not found"));
 
         if (newEventDto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ConflictException("Event date must be at least 2 hours from now");
+            throw new ValidationException("Event date must be at least 2 hours from now");
         }
 
         Event event = eventMapper.toEvent(newEventDto);
@@ -112,7 +112,7 @@ public class EventServiceImpl implements EventService {
 
         if (request.getEventDate() != null) {
             if (request.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                throw new ConflictException("Event date must be at least 2 hours from now");
+                throw new ValidationException("Event date must be at least 2 hours from now");
             }
             event.setEventDate(request.getEventDate());
         }
@@ -143,9 +143,6 @@ public class EventServiceImpl implements EventService {
         if (request.getPaid() != null) {
             event.setPaid(request.getPaid());
         }
-        if (request.getParticipantLimit() != null) {
-            event.setParticipantLimit(request.getParticipantLimit());
-        }
         if (request.getRequestModeration() != null) {
             event.setRequestModeration(request.getRequestModeration());
         }
@@ -161,14 +158,9 @@ public class EventServiceImpl implements EventService {
                 case "CANCEL_REVIEW":
                     event.setState(EventState.CANCELED);
                     break;
+                default:
+                    break;
             }
-        }
-
-        if (request.getParticipantLimit() != null) {
-            if (request.getParticipantLimit() < 0) {
-                throw new ValidationException("Participant limit cannot be negative");
-            }
-            event.setParticipantLimit(request.getParticipantLimit());
         }
 
         Event updatedEvent = eventRepository.save(event);
@@ -217,7 +209,7 @@ public class EventServiceImpl implements EventService {
                     throw new ConflictException("Cannot publish the event because it's not in the right state: " + event.getState());
                 }
                 if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-                    throw new ConflictException("Event date must be at least 1 hour from now");
+                    throw new ValidationException("Event date must be at least 1 hour from now");
                 }
                 event.setState(EventState.PUBLISHED);
                 event.setPublishedOn(LocalDateTime.now());
@@ -242,7 +234,7 @@ public class EventServiceImpl implements EventService {
         }
         if (request.getEventDate() != null) {
             if (request.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-                throw new ConflictException("Event date must be at least 1 hour from now");
+                throw new ValidationException("Event date must be at least 1 hour from now");
             }
             event.setEventDate(request.getEventDate());
         }
@@ -253,6 +245,9 @@ public class EventServiceImpl implements EventService {
             event.setPaid(request.getPaid());
         }
         if (request.getParticipantLimit() != null) {
+            if (request.getParticipantLimit() < 0) {
+                throw new ValidationException("Participant limit cannot be negative");
+            }
             event.setParticipantLimit(request.getParticipantLimit());
         }
         if (request.getRequestModeration() != null) {
@@ -286,10 +281,11 @@ public class EventServiceImpl implements EventService {
         }
 
         Pageable pageable;
+        int page = from / size;
         if (sort != null && sort.equals("VIEWS")) {
-            pageable = PageRequest.of(from / size, size, Sort.by(Sort.Direction.DESC, "views"));
+            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "views"));
         } else {
-            pageable = PageRequest.of(from / size, size, Sort.by(Sort.Direction.ASC, "eventDate"));
+            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "eventDate"));
         }
 
         List<Event> events = eventRepository.findEventsByPublicFilters(

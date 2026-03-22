@@ -10,6 +10,7 @@ import ru.practicum.main.dto.category.CategoryDto;
 import ru.practicum.main.dto.category.NewCategoryDto;
 import ru.practicum.main.exceptions.ConflictException;
 import ru.practicum.main.exceptions.NotFoundException;
+import ru.practicum.main.exceptions.ValidationException;
 import ru.practicum.main.mapper.CategoryMapper;
 import ru.practicum.main.model.Category;
 import ru.practicum.main.repository.CategoryRepository;
@@ -50,6 +51,10 @@ public class CategoryServiceImpl implements CategoryService {
 
         Category category = categoryRepository.findById(catId)
                 .orElseThrow(() -> new NotFoundException("Категория с id " + catId + " не найдена"));
+
+        if (categoryDto.getName() != null && categoryDto.getName().length() > 50) {
+            throw new ValidationException("Category name must be no more than 50 characters");
+        }
 
         if (!category.getName().equals(categoryDto.getName()) &&
                 categoryRepository.existsByName(categoryDto.getName())) {
