@@ -23,8 +23,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "WHERE (:users IS NULL OR e.initiator.id IN :users) " +
             "AND (:states IS NULL OR e.state IN :states) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
-            "AND (CAST(:rangeStart AS date) IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (CAST(:rangeEnd AS date) IS NULL OR e.eventDate <= :rangeEnd)")
+            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
+            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd)")
     List<Event> findEventsByAdminFilters(@Param("users") List<Long> users,
                                          @Param("states") List<EventState> states,
                                          @Param("categories") List<Long> categories,
@@ -38,8 +38,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :text, '%')))) " +
             "AND (:categories IS NULL OR e.category.id IN :categories) " +
             "AND (:paid IS NULL OR e.paid = :paid) " +
-            "AND (CAST(:rangeStart AS date) IS NULL OR e.eventDate >= :rangeStart) " +
-            "AND (CAST(:rangeEnd AS date) IS NULL OR e.eventDate <= :rangeEnd) " +
+            "AND (:rangeStart IS NULL OR e.eventDate >= :rangeStart) " +
+            "AND (:rangeEnd IS NULL OR e.eventDate <= :rangeEnd) " +
             "AND (:onlyAvailable = false OR e.participantLimit = 0 OR e.confirmedRequests < e.participantLimit)")
     List<Event> findEventsByPublicFilters(@Param("text") String text,
                                           @Param("categories") List<Long> categories,
