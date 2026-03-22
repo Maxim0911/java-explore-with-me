@@ -11,7 +11,6 @@ import ru.practicum.client.StatsClient;
 import ru.practicum.dto.HitDto;
 import ru.practicum.dto.StatsDto;
 import ru.practicum.main.dto.event.*;
-import ru.practicum.main.dto.location.LocationDto;
 import ru.practicum.main.exceptions.ConflictException;
 import ru.practicum.main.exceptions.NotFoundException;
 import ru.practicum.main.exceptions.ValidationException;
@@ -156,6 +155,13 @@ public class EventServiceImpl implements EventService {
                     event.setState(EventState.CANCELED);
                     break;
             }
+        }
+
+        if (request.getParticipantLimit() != null) {
+            if (request.getParticipantLimit() < 0) {
+                throw new ValidationException("Participant limit cannot be negative");
+            }
+            event.setParticipantLimit(request.getParticipantLimit());
         }
 
         Event updatedEvent = eventRepository.save(event);
@@ -324,7 +330,7 @@ public class EventServiceImpl implements EventService {
                     .app(APP_NAME)
                     .uri(request.getRequestURI())
                     .ip(request.getRemoteAddr())
-                    .timestamp(LocalDateTime.now())  // ← ИСПРАВЛЕНО: передаем LocalDateTime
+                    .timestamp(LocalDateTime.now())
                     .build();
             statsClient.saveHit(hit);
         } catch (Exception e) {

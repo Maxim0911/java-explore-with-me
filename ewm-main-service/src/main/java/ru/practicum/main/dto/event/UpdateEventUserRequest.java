@@ -1,6 +1,7 @@
 package ru.practicum.main.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import ru.practicum.main.dto.location.LocationDto;
@@ -28,7 +29,10 @@ public class UpdateEventUserRequest {
 
     private LocationDto location;
     private Boolean paid;
+
+    @PositiveOrZero(message = "Лимит участников должен быть положительным числом или 0")
     private Integer participantLimit;
+
     private Boolean requestModeration;
 
     private String stateAction;
