@@ -80,7 +80,10 @@ public class EventServiceImpl implements EventService {
             throw new NotFoundException("User with id " + userId + " not found");
         }
 
-        Pageable pageable = PageRequest.of(from / size, size);
+        int safeFrom = (from != null && from >= 0) ? from : 0;
+        int safeSize = (size != null && size > 0) ? size : 10;
+
+        Pageable pageable = PageRequest.of(safeFrom / safeSize, safeSize);
         List<Event> events = eventRepository.findAllByInitiatorId(userId, pageable);
 
         return events.stream()
@@ -179,19 +182,16 @@ public class EventServiceImpl implements EventService {
                                                        Integer size) {
         log.info("Searching events by admin filters");
 
-        int page = (from != null) ? from / (size != null ? size : 10) : 0;
-        int pageSize = (size != null) ? size : 10;
+        int safeFrom = (from != null && from >= 0) ? from : 0;
+        int safeSize = (size != null && size > 0) ? size : 10;
 
-        if (rangeStart == null) {
-            rangeStart = LocalDateTime.now();
-        }
-        if (rangeEnd == null) {
-            rangeEnd = LocalDateTime.now().plusYears(100);
-        }
+        LocalDateTime start = (rangeStart != null) ? rangeStart : LocalDateTime.now();
+        LocalDateTime end = (rangeEnd != null) ? rangeEnd : LocalDateTime.now().plusYears(100);
 
-        Pageable pageable = PageRequest.of(page, pageSize);
+        int page = safeFrom / safeSize;
+        Pageable pageable = PageRequest.of(page, safeSize);
         List<Event> events = eventRepository.findEventsByAdminFilters(
-                users, states, categories, rangeStart, rangeEnd, pageable);
+                users, states, categories, start, end, pageable);
 
         return events.stream()
                 .map(eventMapper::toEventFullDto)
@@ -279,31 +279,33 @@ public class EventServiceImpl implements EventService {
                                                          HttpServletRequest request) {
         log.info("Searching events by public filters");
 
-        int pageNum = 0;
-        int pageSize = 10;
+        int safeFrom = (from != null && from >= 0) ? from : 0;
+        int safeSize = (size != null && size > 0) ? size : 10;
 
-        if (from != null && from >= 0) {
-            pageNum = from;
-        }
-        if (size != null && size > 0) {
-            pageSize = size;
+        String searchText = null;
+        if (text != null && !text.trim().isEmpty()) {
+            searchText = text.trim();
         }
 
-        int page = pageNum / pageSize;
-
-        if (rangeStart == null && rangeEnd == null) {
-            rangeStart = LocalDateTime.now();
+        LocalDateTime start = rangeStart;
+        LocalDateTime end = rangeEnd;
+        if (start == null && end == null) {
+            start = LocalDateTime.now();
         }
 
+        int page = safeFrom / safeSize;
         Pageable pageable;
         if (sort != null && sort.equals("VIEWS")) {
-            pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "views"));
+            pageable = PageRequest.of(page, safeSize, Sort.by(Sort.Direction.DESC, "views"));
         } else {
-            pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.ASC, "eventDate"));
+            pageable = PageRequest.of(page, safeSize, Sort.by(Sort.Direction.ASC, "eventDate"));
         }
 
+        log.info("Executing query with searchText: {}, categories: {}, paid: {}, start: {}, end: {}, onlyAvailable: {}, pageable: {}",
+                searchText, categories, paid, start, end, onlyAvailable, pageable);
+
         List<Event> events = eventRepository.findEventsByPublicFilters(
-                text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
+                searchText, categories, paid, start, end, onlyAvailable, pageable);
 
         saveHit(request);
 
@@ -369,6 +371,11 @@ public class EventServiceImpl implements EventService {
                     .collect(Collectors.toList());
 
             List<StatsDto> stats = statsClient.getStats(start, end, uris, true);
+
+            if (stats == null) {
+                log.warn("Stats service returned null, using default views");
+                return Collections.emptyMap();
+            }
 
             return stats.stream()
                     .collect(Collectors.toMap(
