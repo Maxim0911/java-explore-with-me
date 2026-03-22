@@ -127,6 +127,13 @@ public class EventServiceImpl implements EventService {
             event.setLocation(locationMapper.toLocation(request.getLocation()));
         }
 
+        if (request.getParticipantLimit() != null) {
+            if (request.getParticipantLimit() < 0) {
+                throw new ValidationException("Participant limit cannot be negative");
+            }
+            event.setParticipantLimit(request.getParticipantLimit());
+        }
+
         if (request.getAnnotation() != null) {
             event.setAnnotation(request.getAnnotation());
         }

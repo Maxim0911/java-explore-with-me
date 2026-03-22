@@ -174,4 +174,19 @@ public class RequestServiceImpl implements RequestService {
         }
         return RequestStatus.PENDING;
     }
+
+    @Override
+    public List<ParticipationRequestDto> getEventParticipants(Long userId, Long eventId) {
+        log.info("Getting participants for event: {} by user: {}", eventId, userId);
+
+        // Проверяем, что событие существует и принадлежит пользователю
+        Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
+                .orElseThrow(() -> new NotFoundException("Event with id " + eventId + " not found for user " + userId));
+
+        List<ParticipationRequest> requests = requestRepository.findAllByEventId(eventId);
+
+        return requests.stream()
+                .map(requestMapper::toParticipationRequestDto)
+                .collect(Collectors.toList());
+    }
 }

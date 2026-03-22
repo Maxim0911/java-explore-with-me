@@ -39,12 +39,4 @@ public class PrivateRequestController {
         log.info("PATCH /users/{}/requests/{}/cancel", userId, requestId);
         return requestService.cancelRequest(userId, requestId);
     }
-
-    @PatchMapping("/{eventId}/requests")
-    public EventRequestStatusUpdateResult updateRequestStatus(@PathVariable Long userId,
-                                                              @PathVariable Long eventId,
-                                                              @RequestBody EventRequestStatusUpdateRequest request) {
-        log.info("PATCH /users/{}/events/{}/requests - updating requests: {}", userId, eventId, request);
-        return requestService.updateRequestStatus(userId, eventId, request);
-    }
 }
