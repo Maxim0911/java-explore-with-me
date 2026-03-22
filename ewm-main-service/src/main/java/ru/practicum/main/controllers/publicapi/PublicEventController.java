@@ -2,6 +2,8 @@ package ru.practicum.main.controllers.publicapi;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -9,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.main.dto.event.EventFullDto;
 import ru.practicum.main.dto.event.EventShortDto;
+import ru.practicum.main.exceptions.ValidationException;
 import ru.practicum.main.service.EventService;
 
 import java.time.LocalDateTime;
@@ -33,9 +36,17 @@ public class PublicEventController {
                                           @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                           @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                           @RequestParam(required = false) String sort,
-                                          @RequestParam(defaultValue = "0") @Min(0) Integer from,
-                                          @RequestParam(defaultValue = "10") @Min(1) Integer size,
+                                          @RequestParam(required = false) Integer from,
+                                          @RequestParam(required = false) Integer size,
                                           HttpServletRequest request) {
+
+        if (from != null && from < 0) {
+            throw new ValidationException("from must be greater than or equal to 0");
+        }
+        if (size != null && size < 1) {
+            throw new ValidationException("size must be greater than 0");
+        }
+
         log.info("GET /events - text: {}, categories: {}, paid: {}, rangeStart: {}, rangeEnd: {}, onlyAvailable: {}, sort: {}, from: {}, size: {}",
                 text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
 

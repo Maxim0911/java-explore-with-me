@@ -279,8 +279,17 @@ public class EventServiceImpl implements EventService {
                                                          HttpServletRequest request) {
         log.info("Searching events by public filters");
 
-        int page = (from != null) ? from / (size != null ? size : 10) : 0;
-        int pageSize = (size != null) ? size : 10;
+        int pageNum = 0;
+        int pageSize = 10;
+
+        if (from != null && from >= 0) {
+            pageNum = from;
+        }
+        if (size != null && size > 0) {
+            pageSize = size;
+        }
+
+        int page = pageNum / pageSize;
 
         if (rangeStart == null && rangeEnd == null) {
             rangeStart = LocalDateTime.now();
