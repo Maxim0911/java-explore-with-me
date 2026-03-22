@@ -1,0 +1,50 @@
+package ru.practicum.main.controllers.privateapi;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import ru.practicum.main.dto.request.EventRequestStatusUpdateRequest;
+import ru.practicum.main.dto.request.EventRequestStatusUpdateResult;
+import ru.practicum.main.dto.request.ParticipationRequestDto;
+import ru.practicum.main.service.RequestService;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/users/{userId}/requests")
+@RequiredArgsConstructor
+@Slf4j
+public class PrivateRequestController {
+
+    private final RequestService requestService;
+
+    @GetMapping
+    public List<ParticipationRequestDto> getUserRequests(@PathVariable Long userId) {
+        log.info("GET /users/{}/requests", userId);
+        return requestService.getUserRequests(userId);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ParticipationRequestDto addRequest(@PathVariable Long userId,
+                                              @RequestParam Long eventId) {
+        log.info("POST /users/{}/requests?eventId={}", userId, eventId);
+        return requestService.addRequest(userId, eventId);
+    }
+
+    @PatchMapping("/{requestId}/cancel")
+    public ParticipationRequestDto cancelRequest(@PathVariable Long userId,
+                                                 @PathVariable Long requestId) {
+        log.info("PATCH /users/{}/requests/{}/cancel", userId, requestId);
+        return requestService.cancelRequest(userId, requestId);
+    }
+
+    @PatchMapping("/{eventId}/requests")
+    public EventRequestStatusUpdateResult updateRequestStatus(@PathVariable Long userId,
+                                                              @PathVariable Long eventId,
+                                                              @RequestBody EventRequestStatusUpdateRequest request) {
+        log.info("PATCH /users/{}/events/{}/requests - updating requests: {}", userId, eventId, request);
+        return requestService.updateRequestStatus(userId, eventId, request);
+    }
+}
