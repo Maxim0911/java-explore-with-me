@@ -20,7 +20,7 @@ public class HitDto {
     private String uri;
 
     @NotBlank(message = "IP cannot be blank")
-    @Pattern(regexp = "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$",
+    @Pattern(regexp = "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$|^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$|^::1$|^localhost$",
             message = "Invalid IP address format")
     private String ip;
 

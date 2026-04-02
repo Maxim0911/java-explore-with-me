@@ -1,6 +1,5 @@
 package ru.practicum.server.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -9,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.HitDto;
 import ru.practicum.dto.StatsDto;
 import ru.practicum.server.service.StatsService;
+
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,9 +32,10 @@ public class StatsController {
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
             @RequestParam(required = false) List<String> uris,
-            @RequestParam(defaultValue = "false") Boolean unique) {
+            @RequestParam(defaultValue = "false") boolean unique) {
 
         log.info("GET /stats with start={}, end={}, uris={}, unique={}", start, end, uris, unique);
+
         return statsService.getStats(start, end, uris, unique);
     }
 }
