@@ -161,7 +161,7 @@
         "url": {
           "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
           "host": ["{{baseUrl}}"],
-          "path": ["users", "userId}}", "comments", "{{commentId}}"]
+          "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
         }
       },
       "event": [
