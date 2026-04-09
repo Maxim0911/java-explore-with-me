@@ -1,0 +1,230 @@
+{
+  "info": {
+    "name": "Explore With Me - Comments API Tests",
+    "schema": "https://schema.postman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "userId", "value": "" },
+    { "key": "eventId", "value": "" },
+    { "key": "commentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Create Comment",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const baseUrl = pm.collectionVariables.get('baseUrl');",
+              "",
+              "const execute = async () => {",
+              "    const ownerBody = { name: 'Owner ' + Date.now(), email: 'owner_' + Date.now() + '@test.com' };",
+              "    const ownerRes = await new Promise((resolve) => {",
+              "        pm.sendRequest({",
+              "            url: baseUrl + '/admin/users',",
+              "            method: 'POST',",
+              "            header: { 'Content-Type': 'application/json' },",
+              "            body: { mode: 'raw', raw: JSON.stringify(ownerBody) }",
+              "        }, (err, res) => { resolve(res); });",
+              "    });",
+              "    const ownerId = ownerRes.json().id;",
+              "",
+              "    const commenterBody = { name: 'Commenter ' + Date.now(), email: 'commenter_' + Date.now() + '@test.com' };",
+              "    const commenterRes = await new Promise((resolve) => {",
+              "        pm.sendRequest({",
+              "            url: baseUrl + '/admin/users',",
+              "            method: 'POST',",
+              "            header: { 'Content-Type': 'application/json' },",
+              "            body: { mode: 'raw', raw: JSON.stringify(commenterBody) }",
+              "        }, (err, res) => { resolve(res); });",
+              "    });",
+              "    const commenterId = commenterRes.json().id;",
+              "    pm.collectionVariables.set('userId', commenterId);",
+              "",
+              "    const catBody = { name: 'Category ' + Date.now() };",
+              "    const catRes = await new Promise((resolve) => {",
+              "        pm.sendRequest({",
+              "            url: baseUrl + '/admin/categories',",
+              "            method: 'POST',",
+              "            header: { 'Content-Type': 'application/json' },",
+              "            body: { mode: 'raw', raw: JSON.stringify(catBody) }",
+              "        }, (err, res) => { resolve(res); });",
+              "    });",
+              "    const categoryId = catRes.json().id;",
+              "",
+              "    const eventDate = new Date(Date.now() + 3 * 60 * 60 * 1000);",
+              "    const formattedDate = eventDate.toISOString().slice(0, 19).replace('T', ' ');",
+              "    const eventBody = {",
+              "        annotation: 'Test annotation ' + Date.now(),",
+              "        category: categoryId,",
+              "        description: 'Test description ' + Date.now(),",
+              "        eventDate: formattedDate,",
+              "        location: { lat: 55.751244, lon: 37.618423 },",
+              "        paid: false,",
+              "        participantLimit: 10,",
+              "        requestModeration: true,",
+              "        title: 'Event ' + Date.now()",
+              "    };",
+              "    const eventRes = await new Promise((resolve) => {",
+              "        pm.sendRequest({",
+              "            url: baseUrl + '/users/' + ownerId + '/events',",
+              "            method: 'POST',",
+              "            header: { 'Content-Type': 'application/json' },",
+              "            body: { mode: 'raw', raw: JSON.stringify(eventBody) }",
+              "        }, (err, res) => { resolve(res); });",
+              "    });",
+              "    if (eventRes.code !== 201) {",
+              "        console.error('Event creation failed:', eventRes.json());",
+              "        throw new Error('Event creation failed with status ' + eventRes.code);",
+              "    }",
+              "    const eventId = eventRes.json().id;",
+              "    pm.collectionVariables.set('eventId', eventId);",
+              "",
+              "    await new Promise((resolve) => {",
+              "        pm.sendRequest({",
+              "            url: baseUrl + '/admin/events/' + eventId,",
+              "            method: 'PATCH',",
+              "            header: { 'Content-Type': 'application/json' },",
+              "            body: { mode: 'raw', raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' }) }",
+              "        }, (err, res) => { resolve(res); });",
+              "    });",
+              "};",
+              "",
+              "execute();"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+              "const jsonData = pm.response.json();",
+              "pm.test(\"Has id\", () => pm.expect(jsonData).to.have.property('id'));",
+              "pm.test(\"Has text\", () => pm.expect(jsonData).to.have.property('text'));",
+              "pm.collectionVariables.set('commentId', jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"text\": \"Test comment from Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "events", "{{eventId}}", "comments"]
+        }
+      }
+    },
+    {
+      "name": "2. Get Event Comments",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["events", "{{eventId}}", "comments"],
+          "query": [
+            { "key": "from", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const jsonData = pm.response.json();",
+              "pm.test(\"Has content array\", () => pm.expect(jsonData).to.have.property('content'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get User Comments",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "comments"],
+          "query": [
+            { "key": "from", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const jsonData = pm.response.json();",
+              "pm.test(\"Has content array\", () => pm.expect(jsonData).to.have.property('content'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Update Comment",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"text\": \"Updated comment text\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+              "const jsonData = pm.response.json();",
+              "pm.test(\"Text updated\", () => pm.expect(jsonData.text).to.equal('Updated comment text'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Delete Comment",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

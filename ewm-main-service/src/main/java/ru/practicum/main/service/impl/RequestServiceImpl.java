@@ -90,7 +90,7 @@ public class RequestServiceImpl implements RequestService {
         }
 
         ParticipationRequest request = ParticipationRequest.builder()
-                .created(LocalDateTime.now())
+                .created(LocalDateTime.now().withNano(0))
                 .event(event)
                 .requester(user)
                 .status(determineInitialStatus(event))

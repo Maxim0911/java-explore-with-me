@@ -20,7 +20,7 @@ public class ParticipationRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "created", nullable = false)
+    @Column(name = "created", nullable = false, updatable = false)
     private LocalDateTime created;
 
     @ManyToOne(fetch = FetchType.LAZY)
