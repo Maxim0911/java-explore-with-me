@@ -1,31 +1,73 @@
 {
   "info": {
     "name": "Explore With Me - Comments API Tests",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.postman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "userId", "value": "2" },
-    { "key": "eventId", "value": "5" },
+    { "key": "userId", "value": "" },
+    { "key": "eventId", "value": "" },
     { "key": "commentId", "value": "" }
   ],
   "item": [
     {
       "name": "1. Create Comment",
-      "request": {
-        "method": "POST",
-        "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"text\": \"Test comment from Postman\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}/comments",
-          "host": ["{{baseUrl}}"],
-          "path": ["users", "{{userId}}", "events", "{{eventId}}", "comments"]
-        }
-      },
       "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const baseUrl = pm.collectionVariables.get('baseUrl');",
+              "",
+              "const userBody = { name: 'Test User ' + Date.now(), email: 'user_' + Date.now() + '@test.com' };",
+              "const userRes = await pm.sendRequest({",
+              "    url: baseUrl + '/admin/users',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: JSON.stringify(userBody) }",
+              "});",
+              "const userId = userRes.json().id;",
+              "pm.collectionVariables.set('userId', userId);",
+              "",
+              "const catBody = { name: 'Category ' + Date.now() };",
+              "const catRes = await pm.sendRequest({",
+              "    url: baseUrl + '/admin/categories',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: JSON.stringify(catBody) }",
+              "});",
+              "const categoryId = catRes.json().id;",
+              "",
+              "const eventDate = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace('T', ' ');",
+              "const eventBody = {",
+              "    annotation: 'Test annotation ' + Date.now(),",
+              "    category: categoryId,",
+              "    description: 'Test description ' + Date.now(),",
+              "    eventDate: eventDate,",
+              "    location: { lat: 55.751244, lon: 37.618423 },",
+              "    paid: false,",
+              "    participantLimit: 10,",
+              "    requestModeration: true,",
+              "    title: 'Event ' + Date.now()",
+              "};",
+              "const eventRes = await pm.sendRequest({",
+              "    url: baseUrl + '/users/' + userId + '/events',",
+              "    method: 'POST',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: JSON.stringify(eventBody) }",
+              "});",
+              "const eventId = eventRes.json().id;",
+              "pm.collectionVariables.set('eventId', eventId);",
+              "",
+              "await pm.sendRequest({",
+              "    url: baseUrl + '/admin/events/' + eventId,",
+              "    method: 'PATCH',",
+              "    header: { 'Content-Type': 'application/json' },",
+              "    body: { mode: 'raw', raw: JSON.stringify({ stateAction: 'PUBLISH_EVENT' }) }",
+              "});"
+            ]
+          }
+        },
         {
           "listen": "test",
           "script": {
@@ -38,7 +80,20 @@
             ]
           }
         }
-      ]
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"text\": \"Test comment from Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "events", "{{eventId}}", "comments"]
+        }
+      }
     },
     {
       "name": "2. Get Event Comments",
@@ -106,7 +161,7 @@
         "url": {
           "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
           "host": ["{{baseUrl}}"],
-          "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+          "path": ["users", "userId}}", "comments", "{{commentId}}"]
         }
       },
       "event": [
