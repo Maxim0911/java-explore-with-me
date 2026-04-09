@@ -1,14 +1,30 @@
 {
   "info": {
-    "_postman_id": "26205882-8309-4290-943d-44171a829e08",
     "name": "Explore With Me - Comments API Tests",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "49373987",
-    "_collection_link": "https://go.postman.co/collection/49373987-26205882-8309-4290-943d-44171a829e08?source=collection_link"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "userId", "value": "2" },
+    { "key": "eventId", "value": "5" },
+    { "key": "commentId", "value": "" }
+  ],
   "item": [
     {
       "name": "1. Create Comment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"text\": \"Test comment from Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "events", "{{eventId}}", "comments"]
+        }
+      },
       "event": [
         {
           "listen": "test",
@@ -19,41 +35,25 @@
               "pm.test(\"Has id\", () => pm.expect(jsonData).to.have.property('id'));",
               "pm.test(\"Has text\", () => pm.expect(jsonData).to.have.property('text'));",
               "pm.collectionVariables.set('commentId', jsonData.id);"
-            ],
-            "type": "text/javascript"
+            ]
           }
         }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"text\": \"Test comment from Postman\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/users/{{userId}}/events/{{eventId}}/comments",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "users",
-            "{{userId}}",
-            "events",
-            "{{eventId}}",
-            "comments"
-          ]
-        }
-      },
-      "response": []
+      ]
     },
     {
       "name": "2. Get Event Comments",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["events", "{{eventId}}", "comments"],
+          "query": [
+            { "key": "from", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      },
       "event": [
         {
           "listen": "test",
@@ -62,40 +62,25 @@
               "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
               "const jsonData = pm.response.json();",
               "pm.test(\"Has content array\", () => pm.expect(jsonData).to.have.property('content'));"
-            ],
-            "type": "text/javascript"
+            ]
           }
         }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/events/{{eventId}}/comments?from=0&size=10",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "events",
-            "{{eventId}}",
-            "comments"
-          ],
-          "query": [
-            {
-              "key": "from",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            }
-          ]
-        }
-      },
-      "response": []
+      ]
     },
     {
       "name": "3. Get User Comments",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "comments"],
+          "query": [
+            { "key": "from", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      },
       "event": [
         {
           "listen": "test",
@@ -104,40 +89,26 @@
               "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
               "const jsonData = pm.response.json();",
               "pm.test(\"Has content array\", () => pm.expect(jsonData).to.have.property('content'));"
-            ],
-            "type": "text/javascript"
+            ]
           }
         }
-      ],
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/users/{{userId}}/comments?from=0&size=10",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "users",
-            "{{userId}}",
-            "comments"
-          ],
-          "query": [
-            {
-              "key": "from",
-              "value": "0"
-            },
-            {
-              "key": "size",
-              "value": "10"
-            }
-          ]
-        }
-      },
-      "response": []
+      ]
     },
     {
       "name": "4. Update Comment",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"text\": \"Updated comment text\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+        }
+      },
       "event": [
         {
           "listen": "test",
@@ -146,132 +117,31 @@
               "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
               "const jsonData = pm.response.json();",
               "pm.test(\"Text updated\", () => pm.expect(jsonData.text).to.equal('Updated comment text'));"
-            ],
-            "type": "text/javascript"
+            ]
           }
         }
-      ],
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"text\": \"Updated comment text\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "users",
-            "{{userId}}",
-            "comments",
-            "{{commentId}}"
-          ]
-        }
-      },
-      "response": []
+      ]
     },
     {
       "name": "5. Delete Comment",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["users", "{{userId}}", "comments", "{{commentId}}"]
+        }
+      },
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
               "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
-            ],
-            "type": "text/javascript"
+            ]
           }
         }
-      ],
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/users/{{userId}}/comments/{{commentId}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "users",
-            "{{userId}}",
-            "comments",
-            "{{commentId}}"
-          ]
-        }
-      },
-      "response": []
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          "const uniqueId = Date.now();\r",
-          "const randomString = Math.random().toString(36).substring(7);\r",
-          "\r",
-          "const userBody = {\r",
-          "    name: `User_${uniqueId}`,\r",
-          "    email: `user_${uniqueId}@test.com`\r",
-          "};\r",
-          "\r",
-          "const categoryBody = {\r",
-          "    name: `Category_${randomString}`\r",
-          "};\r",
-          "\r",
-          "const eventBody = {\r",
-          "    annotation: `Test annotation ${uniqueId}`,\r",
-          "    category: categoryId,\r",
-          "    description: `Test description ${uniqueId}`,\r",
-          "    eventDate: new Date(Date.now() + 3600000).toISOString().replace('T', ' ').slice(0, 19),\r",
-          "    location: { lat: 55.75, lon: 37.61 },\r",
-          "    paid: false,\r",
-          "    participantLimit: 10,\r",
-          "    requestModeration: false,\r",
-          "    title: `Event_${uniqueId}`\r",
-          "};"
-        ]
-      }
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080"
-    },
-    {
-      "key": "eventId",
-      "value": ""
-    },
-    {
-      "key": "commentId",
-      "value": ""
-    },
-    {
-      "key": "userId",
-      "value": ""
+      ]
     }
   ]
 }
