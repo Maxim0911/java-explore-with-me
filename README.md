@@ -164,3 +164,8 @@ mvn clean package -DskipTests
 |-------|----------|----------|
 | POST | /hit | Сохранение информации о запросе |
 | GET | /stats | Получение статистики по посещениям |
+
+
+
+
+https://github.com/Maxim0911/java-explore-with-me/pull/5
