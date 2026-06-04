@@ -167,5 +167,3 @@ mvn clean package -DskipTests
 
 
 
-
-https://github.com/Maxim0911/java-explore-with-me/pull/5
